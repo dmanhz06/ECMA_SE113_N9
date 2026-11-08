@@ -1,0 +1,4 @@
+@model AgendaFormViewModel
+@{ ViewData["Title"] = "Thêm mục chương trình"; }
+<div class="page-shell form-page"><a class="back-link" asp-action="Details" asp-route-id="@Model.EventId">Quay lại chi tiết</a><header class="page-heading"><h1>Thêm mục chương trình</h1></header><form class="form-surface" asp-action="AddAgenda" asp-route-eventId="@Model.EventId" method="post"><partial name="_AgendaForm" model="Model" /><div class="form-actions"><a class="button button-secondary" asp-action="Details" asp-route-id="@Model.EventId">Hủy</a><button class="button button-primary" type="submit">Thêm mục</button></div></form></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

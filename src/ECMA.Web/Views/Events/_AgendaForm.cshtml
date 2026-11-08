@@ -1,0 +1,30 @@
+@model AgendaFormViewModel
+<input asp-for="EventId" type="hidden" />
+@if (Model.ItemId.HasValue)
+{
+    <input asp-for="ItemId" type="hidden" />
+}
+<div asp-validation-summary="ModelOnly"></div>
+<div class="form-grid">
+    <div class="field form-grid-full">
+        <label asp-for="Title">Tiêu đề mục <span aria-hidden="true">*</span></label>
+        <input asp-for="Title" maxlength="100" autocomplete="off" required />
+        <span asp-validation-for="Title"></span>
+    </div>
+    <div class="field">
+        <label asp-for="StartAt">Bắt đầu <span aria-hidden="true">*</span></label>
+        <input asp-for="StartAt" type="datetime-local" step="60" asp-format="{0:yyyy-MM-ddTHH:mm}" required />
+        <span asp-validation-for="StartAt"></span>
+    </div>
+    <div class="field">
+        <label asp-for="EndAt">Kết thúc <span aria-hidden="true">*</span></label>
+        <input asp-for="EndAt" type="datetime-local" step="60" asp-format="{0:yyyy-MM-ddTHH:mm}" required />
+        <span asp-validation-for="EndAt"></span>
+    </div>
+    <div class="field form-grid-full">
+        <label asp-for="Content">Nội dung</label>
+        <textarea asp-for="Content" rows="7" maxlength="1000"></textarea>
+        <span class="field-hint">Có thể ghi tên diễn giả trong nội dung. Tối đa 1.000 ký tự.</span>
+        <span asp-validation-for="Content"></span>
+    </div>
+</div>

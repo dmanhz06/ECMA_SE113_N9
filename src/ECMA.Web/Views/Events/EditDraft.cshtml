@@ -1,0 +1,4 @@
+@model EventFormViewModel
+@{ ViewData["Title"] = "Sửa bản nháp"; }
+<div class="page-shell form-page"><a class="back-link" asp-action="Details" asp-route-id="@Model.Id">Quay lại chi tiết</a><header class="page-heading"><h1>Sửa thông tin sự kiện</h1></header><form class="form-surface" asp-action="EditDraft" asp-route-id="@Model.Id" method="post"><input asp-for="Id" type="hidden" /><partial name="_EventForm" model="Model" /><div class="form-actions"><a class="button button-secondary" asp-action="Details" asp-route-id="@Model.Id">Hủy</a><button class="button button-primary" type="submit">Lưu thay đổi</button></div></form></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/event-location.js" asp-append-version="true"></script> }

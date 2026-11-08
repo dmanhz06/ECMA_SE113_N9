@@ -1,0 +1,39 @@
+@model EventManageListViewModel
+@using ECMA.Domain.Enums
+@{
+    ViewData["Title"] = "Quản lý sự kiện";
+    string TypeLabel(EventType type) => type == EventType.Conference ? "Hội nghị" : "Sự kiện";
+    string StatusLabel(EffectiveEventStatus status) => status switch { EffectiveEventStatus.Draft => "Bản nháp", EffectiveEventStatus.Published => "Đã công bố", EffectiveEventStatus.Cancelled => "Đã hủy", _ => "Đã kết thúc" };
+}
+<div class="page-shell">
+    <header class="page-heading">
+        <h1>Quản lý sự kiện</h1>
+        <a class="button button-primary" asp-action="Create">Tạo sự kiện</a>
+    </header>
+    @if (TempData["SuccessMessage"] is string success) { <p class="notice notice-success" role="status">@success</p> }
+    @if (TempData["ErrorMessage"] is string error) { <p class="notice notice-error" role="alert">@error</p> }
+    <form class="filter-bar" method="get" asp-action="Index">
+        <div class="field filter-search"><label for="keyword">Tìm theo tiêu đề</label><input id="keyword" name="keyword" value="@Model.Keyword" maxlength="100" placeholder="Nhập tiêu đề sự kiện" /></div>
+        <div class="field"><label for="type">Loại</label><select id="type" name="type"><option value="All" selected="@(Model.Type is null or "All")">Tất cả</option><option value="Event" selected="@(Model.Type == "Event")">Sự kiện</option><option value="Conference" selected="@(Model.Type == "Conference")">Hội nghị</option></select></div>
+        <div class="field"><label for="status">Trạng thái</label><select id="status" name="status"><option value="All" selected="@(Model.Status is null or "All")">Tất cả</option><option value="Draft" selected="@(Model.Status == "Draft")">Bản nháp</option><option value="Published" selected="@(Model.Status == "Published")">Đã công bố</option><option value="Cancelled" selected="@(Model.Status == "Cancelled")">Đã hủy</option><option value="Completed" selected="@(Model.Status == "Completed")">Đã kết thúc</option></select></div>
+        <input type="hidden" name="page" value="1" />
+        <div class="filter-actions"><button class="button button-primary" type="submit">Áp dụng</button><a class="button button-secondary" asp-action="Index">Xóa lọc</a></div>
+    </form>
+    <section class="data-panel" aria-labelledby="event-list-title">
+        <div class="panel-heading"><div><h2 id="event-list-title">Danh sách</h2><p>@Model.Events.Count sự kiện trên trang @Model.Page</p></div></div>
+        @if (Model.Events.Count == 0)
+        {
+            <div class="empty-state"><h3>Không có sự kiện phù hợp</h3><p>Điều chỉnh bộ lọc hoặc tạo sự kiện mới.</p></div>
+        }
+        else
+        {
+            <div class="table-scroll"><table><thead><tr><th>Sự kiện</th><th>Loại</th><th>Thời gian</th><th>Địa điểm</th><th>Sức chứa</th><th>Trạng thái</th><th><span class="sr-only">Thao tác</span></th></tr></thead><tbody>
+            @foreach (var item in Model.Events)
+            {
+                <tr><td><a class="table-title" asp-action="Details" asp-route-id="@item.Id">@item.Title</a><span class="table-meta">Tạo @item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span></td><td>@TypeLabel(item.Type)</td><td><strong>@item.StartAt.ToString("dd/MM/yyyy")</strong><span class="table-meta">@item.StartAt.ToString("HH:mm")–@item.EndAt.ToString("dd/MM HH:mm")</span></td><td class="table-location">@item.Location</td><td>@item.Capacity.ToString("N0")</td><td><span class="status status-@item.Status.ToString().ToLowerInvariant()">@StatusLabel(item.Status)</span></td><td class="table-action"><a asp-action="Details" asp-route-id="@item.Id">Xem chi tiết</a></td></tr>
+            }
+            </tbody></table></div>
+        }
+    </section>
+    <nav class="pagination" aria-label="Phân trang"><span>Trang @Model.Page</span><div>@if (Model.Page > 1) { <a class="button button-secondary" asp-action="Index" asp-route-keyword="@Model.Keyword" asp-route-type="@Model.Type" asp-route-status="@Model.Status" asp-route-page="@(Model.Page - 1)">Trang trước</a> } @if (Model.Events.Count == 20) { <a class="button button-secondary" asp-action="Index" asp-route-keyword="@Model.Keyword" asp-route-type="@Model.Type" asp-route-status="@Model.Status" asp-route-page="@(Model.Page + 1)">Trang sau</a> }</div></nav>
+</div>

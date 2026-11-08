@@ -1,0 +1,29 @@
+@model EventDetailsViewModel
+@using ECMA.Domain.Enums
+@{
+    ViewData["Title"] = Model.Title;
+    var isDraft = Model.Status == EffectiveEventStatus.Draft;
+    var isPublished = Model.Status == EffectiveEventStatus.Published;
+    string typeLabel = Model.Type == EventType.Conference ? "Hội nghị" : "Sự kiện";
+    string statusLabel = Model.Status switch { EffectiveEventStatus.Draft => "Bản nháp", EffectiveEventStatus.Published => "Đã công bố", EffectiveEventStatus.Cancelled => "Đã hủy", _ => "Đã kết thúc" };
+    var groups = Model.Agenda.GroupBy(x => x.StartAt.Date);
+}
+<div class="page-shell">
+<a class="back-link" asp-action="Index">Quay lại danh sách</a>
+@if (TempData["SuccessMessage"] is string success) { <p class="notice notice-success" role="status">@success</p> }
+@if (TempData["ErrorMessage"] is string error) { <p class="notice notice-error" role="alert">@error</p> }
+<header class="detail-hero"><div><div class="detail-kicker"><span>@typeLabel</span><span class="status status-@Model.Status.ToString().ToLowerInvariant()">@statusLabel</span></div><h1>@Model.Title</h1><p>@Model.Description</p></div><div class="detail-actions">
+@if (isDraft) { <a class="button button-secondary" asp-action="EditDraft" asp-route-id="@Model.Id">Sửa bản nháp</a><form asp-action="Publish" asp-route-id="@Model.Id" method="post" data-confirm="Xác nhận công bố sự kiện? Loại, thời gian và chương trình sẽ bị khóa."><button class="button button-primary" type="submit">Công bố</button></form> }
+else if (Model.CanEditPublished) { <a class="button button-secondary" asp-action="EditPublished" asp-route-id="@Model.Id">Cập nhật</a> }
+@if (Model.CanManage) { <a class="button button-secondary" asp-controller="Participants" asp-action="Index" asp-route-eventId="@Model.Id">Người tham dự và thống kê</a> }
+@if (!isDraft) { <a class="button button-secondary" asp-controller="PublicEvents" asp-action="Details" asp-route-id="@Model.Id">Trang công khai</a> }
+@if (Model.CanCancel) { <a class="button button-danger-outline" asp-action="Cancel" asp-route-id="@Model.Id">Hủy sự kiện</a> }
+</div></header>
+<div class="detail-layout"><main class="detail-main"><section class="agenda-section" aria-labelledby="agenda-title"><div class="section-heading"><div><p class="eyebrow">Lịch trình</p><h2 id="agenda-title">Chương trình</h2></div>@if (isDraft) { <a class="button button-primary" asp-action="AddAgenda" asp-route-eventId="@Model.Id">Thêm mục</a> }</div>
+@if (Model.Agenda.Count == 0) { <div class="empty-state"><h3>Chưa có chương trình</h3><p>@(isDraft ? "Thêm mục để xây dựng lịch trình sự kiện." : "Sự kiện này không có mục chương trình.")</p></div> }
+else { <div class="agenda-list">@foreach (var group in groups) { <section class="agenda-day"><h3>@group.Key.ToString("dddd, dd/MM/yyyy")</h3><div>@foreach (var item in group) { <article class="agenda-item"><time>@item.StartAt.ToString("HH:mm")<span>@item.EndAt.ToString("HH:mm")</span></time><div><h4>@item.Title</h4>@if (!string.IsNullOrWhiteSpace(item.Content)) { <p>@item.Content</p> }</div>@if (isDraft) { <div class="agenda-actions"><a asp-action="EditAgenda" asp-route-eventId="@Model.Id" asp-route-itemId="@item.Id">Sửa</a><form asp-action="DeleteAgenda" asp-route-eventId="@Model.Id" asp-route-itemId="@item.Id" method="post" data-confirm="Xác nhận xóa mục chương trình này?"><button type="submit">Xóa</button></form></div> }</article> }</div></section> }</div> }
+</section></main><aside class="detail-sidebar" aria-label="Thông tin sự kiện"><section><h2>Thông tin</h2><dl class="facts"><div><dt>Thời gian</dt><dd>@Model.StartAt.ToString("HH:mm, dd/MM/yyyy")<span>đến @Model.EndAt.ToString("HH:mm, dd/MM/yyyy")</span></dd></div><div><dt>Địa điểm</dt><dd>@Model.Location</dd></div><div><dt>Sức chứa</dt><dd>@Model.Capacity.ToString("N0") người</dd></div><div><dt>Ngày tạo</dt><dd>@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd></div></dl></section>
+@if (Model.Status == EffectiveEventStatus.Cancelled && !string.IsNullOrWhiteSpace(Model.CancelReason)) { <section class="cancel-note"><h2>Lý do hủy</h2><p>@Model.CancelReason</p></section> }
+@if (isDraft) { <section class="danger-zone"><h2>Vùng nguy hiểm</h2><p>Xóa bản nháp khỏi mọi màn hình nghiệp vụ.</p><form asp-action="Delete" asp-route-id="@Model.Id" method="post" data-confirm="Xác nhận xóa bản nháp? Thao tác này không thể hoàn tác."><button class="button button-danger-outline" type="submit">Xóa bản nháp</button></form></section> }
+</aside></div></div>
+@section Scripts { <script src="~/js/event-confirmations.js" asp-append-version="true"></script> }

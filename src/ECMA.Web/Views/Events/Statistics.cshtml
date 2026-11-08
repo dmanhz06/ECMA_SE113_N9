@@ -1,0 +1,109 @@
+@model EventStatisticsViewModel
+@using System.Globalization
+@using ECMA.Domain.Enums
+@using ECMA.Web.Services
+@{
+    ViewData["Title"] = "Thống kê sự kiện";
+    var vi = CultureInfo.GetCultureInfo("vi-VN");
+}
+<div class="page-shell">
+    <a class="back-link" asp-controller="Events" asp-action="Index">← Quay lại quản lý sự kiện</a>
+    <header class="page-heading">
+        <div>
+            <p class="eyebrow">Báo cáo quản lý</p>
+            <h1>Thống kê sự kiện</h1>
+            <p class="field-hint">Tổng hợp từ dữ liệu đăng ký hiện tại, không phụ thuộc bộ lọc hay phân trang.</p>
+        </div>
+    </header>
+
+    <section aria-label="Tổng quan sự kiện">
+        <h2 class="mb-3 text-lg font-bold text-stone-700">Tổng quan sự kiện</h2>
+        <dl class="stats-grid">
+            <div><dt>Tổng sự kiện</dt><dd>@Model.TotalEvents.ToString("N0", vi)</dd></div>
+            <div><dt>Bản nháp</dt><dd>@Model.DraftEvents.ToString("N0", vi)</dd></div>
+            <div><dt>Đang diễn ra / sắp diễn ra</dt><dd>@Model.PublishedEvents.ToString("N0", vi)</dd></div>
+            <div><dt>Đã kết thúc</dt><dd>@Model.CompletedEvents.ToString("N0", vi)</dd></div>
+            <div><dt>Đã hủy</dt><dd>@Model.CancelledEvents.ToString("N0", vi)</dd></div>
+        </dl>
+    </section>
+
+    <section class="mt-8" aria-label="Tổng quan đăng ký">
+        <h2 class="mb-3 text-lg font-bold text-stone-700">Tổng quan đăng ký</h2>
+        <dl class="stats-grid">
+            <div><dt>Tổng bản ghi đăng ký</dt><dd>@Model.TotalRegistrations.ToString("N0", vi)</dd></div>
+            <div><dt>Đang xác nhận</dt><dd>@Model.ConfirmedRegistrations.ToString("N0", vi)</dd></div>
+            <div><dt>Đã hủy</dt><dd>@Model.CancelledRegistrations.ToString("N0", vi)</dd></div>
+            <div><dt>Đã điểm danh</dt><dd>@Model.CheckedInRegistrations.ToString("N0", vi)</dd></div>
+        </dl>
+    </section>
+
+    <section class="data-panel mt-8" aria-labelledby="event-statistics-title">
+        <div class="panel-heading">
+            <div><h2 id="event-statistics-title">Thống kê theo từng sự kiện</h2><p>@Model.Events.Count sự kiện</p></div>
+        </div>
+        @if (Model.Events.Count == 0)
+        {
+            <div class="empty-state">
+                <h3>Chưa có dữ liệu thống kê</h3>
+                <p>Các sự kiện chưa bị xóa mềm sẽ xuất hiện tại đây khi được tạo.</p>
+                <a class="button button-primary mt-4" asp-controller="Events" asp-action="Create">Tạo sự kiện</a>
+            </div>
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sự kiện</th><th>Trạng thái</th><th>Thời gian</th><th>Sức chứa</th>
+                            <th>Đăng ký</th><th>Điểm danh</th><th>Tỷ lệ tham dự</th><th>Vắng mặt</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Events)
+                    {
+                        var used = item.Capacity <= 0 ? 0 : Math.Clamp((decimal)item.ConfirmedRegistrations / item.Capacity * 100m, 0m, 100m);
+                        var statusLabel = item.EventStatus switch
+                        {
+                            EffectiveEventStatus.Draft => "Bản nháp",
+                            EffectiveEventStatus.Published => "Đã công bố",
+                            EffectiveEventStatus.Cancelled => "Đã hủy",
+                            EffectiveEventStatus.Completed => "Đã kết thúc",
+                            _ => "Không xác định"
+                        };
+                        <tr>
+                            <td>
+                                <strong>@item.EventTitle</strong>
+                                <span class="table-meta">@(item.EventType == EventType.Conference ? "Hội nghị" : "Sự kiện")</span>
+                            </td>
+                            <td><span class="status status-@item.EventStatus.ToString().ToLowerInvariant()">@statusLabel</span></td>
+                            <td>
+                                <span>@VietnamTime.Format(item.StartAt, "dd/MM/yyyy HH:mm")</span>
+                                <span class="table-meta">đến @VietnamTime.Format(item.EndAt, "dd/MM/yyyy HH:mm")</span>
+                            </td>
+                            <td>
+                                <strong>@item.ConfirmedRegistrations.ToString("N0", vi) / @item.Capacity.ToString("N0", vi)</strong>
+                                <div class="mt-2 overflow-hidden rounded-full" style="height: .5rem; width: 7rem; background-color: #e7e5e4" role="progressbar" aria-label="Tỷ lệ sử dụng sức chứa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@used.ToString("0.0", CultureInfo.InvariantCulture)">
+                                    <div style="display: block; height: 100%; border-radius: 9999px; background-color: #047857; width: @used.ToString("0.0", CultureInfo.InvariantCulture)%"></div>
+                                </div>
+                                <span class="table-meta">Còn @item.RemainingSlots.ToString("N0", vi) chỗ</span>
+                            </td>
+                            <td>
+                                <strong>@item.ConfirmedRegistrations.ToString("N0", vi) đang xác nhận</strong>
+                                <span class="table-meta">@item.CancelledRegistrations.ToString("N0", vi) đã hủy</span>
+                            </td>
+                            <td>
+                                <strong>@item.CheckedInRegistrations.ToString("N0", vi) đã đến</strong>
+                                <span class="table-meta">@item.NotCheckedIn.ToString("N0", vi) chưa điểm danh</span>
+                            </td>
+                            <td>@item.AttendanceRate.ToString("0.0", vi)%</td>
+                            <td>@(item.AbsentCount?.ToString("N0", vi) ?? "—")</td>
+                            <td class="table-action"><a asp-controller="Participants" asp-action="Index" asp-route-eventId="@item.EventId">Chi tiết</a></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
